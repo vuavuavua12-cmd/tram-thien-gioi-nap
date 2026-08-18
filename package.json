@@ -1,0 +1,9 @@
+{
+  "name": "tram-thien-gioi-payos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@payos/node": "^2.0.0"
+  }
+}
