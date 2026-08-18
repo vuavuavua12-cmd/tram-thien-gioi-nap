@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nạp Thần Thạch - Trảm Thiên Giới</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#f8fafc}
+    .card{width:min(520px,100%);background:#111827;border:1px solid #334155;border-radius:20px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+    h1{margin:0 0 8px;font-size:28px}
+    .sub{color:#cbd5e1;margin:0 0 22px}
+    label{display:block;margin:14px 0 7px;font-weight:700}
+    input,button{width:100%;border-radius:12px;font-size:17px;padding:14px}
+    input{border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
+    button{margin-top:18px;border:0;background:#f8fafc;color:#111827;font-weight:800;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .result{margin-top:18px;padding:14px;border-radius:12px;background:#0f172a;display:none}
+    .error{color:#fecaca}
+    .ok{color:#bbf7d0}
+    a.pay{display:block;text-align:center;padding:14px;border-radius:12px;background:#22c55e;color:#052e16;text-decoration:none;font-weight:900;margin-top:12px}
+    .warning{margin-top:18px;font-size:13px;color:#94a3b8}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>TRẢM THIÊN GIỚI</h1>
+    <p class="sub">Nạp Thần Thạch qua payOS</p>
+
+    <form id="form">
+      <label for="username">Tên Minecraft</label>
+      <input id="username" maxlength="16" placeholder="Ví dụ: Vuong123" required>
+
+      <label for="amount">Số tiền (VNĐ)</label>
+      <input id="amount" type="number" min="1000" max="10000000" step="1000" value="10000" required>
+
+      <button id="submit" type="submit">TẠO THANH TOÁN</button>
+    </form>
+
+    <section id="result" class="result"></section>
+
+    <p class="warning">
+      Chỉ thanh toán sau khi chủ server đã hoàn tất phần nối webhook với hệ thống Thần Thạch.
+    </p>
+  </main>
+
+<script>
+const form = document.getElementById("form");
+const result = document.getElementById("result");
+const submit = document.getElementById("submit");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  submit.disabled = true;
+  result.style.display = "block";
+  result.innerHTML = "Đang tạo thanh toán...";
+
+  try {
+    const response = await fetch("/api/create-payment", {
+      method: "POST",
+      headers: {"content-type":"application/json"},
+      body: JSON.stringify({
+        username: document.getElementById("username").value.trim(),
+        amount: Number(document.getElementById("amount").value)
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      result.innerHTML = `<div class="error">${data.error || "Có lỗi xảy ra."}</div>`;
+      return;
+    }
+
+    result.innerHTML = `
+      <div class="ok"><b>Đã tạo đơn #${data.orderCode}</b></div>
+      <div>Tài khoản: <b>${escapeHtml(data.username)}</b></div>
+      <div>Số tiền: <b>${Number(data.amount).toLocaleString("vi-VN")}đ</b></div>
+      <div>Nhận dự kiến: <b>${data.thanThach} Thần Thạch</b></div>
+      <a class="pay" href="${data.checkoutUrl}" rel="noopener">MỞ payOS ĐỂ THANH TOÁN</a>
+    `;
+  } catch (err) {
+    result.innerHTML = `<div class="error">Không kết nối được máy chủ web.</div>`;
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+</script>
+</body>
+</html>
